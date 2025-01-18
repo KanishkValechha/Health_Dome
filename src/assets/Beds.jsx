@@ -1,12 +1,28 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const hospitals = [
   { name: "Bhardwaj Hospital", url: "http://localhost:5000" },
-  { name: "Balaji Soni Hospital", url: "http://vedicvarma.com:5000" },
-  { name: "Agrawal Hospital", url: "http://192.168.205.1:5000" },
+  // { name: "Balaji Soni Hospital", url: "http://vedicvarma.com:5000" },
+  // { name: "Agrawal Hospital", url: "http://192.168.31.1:5000/" },
 ];
+
+const LoadingSpinner = () => (
+  <motion.div 
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50"
+  >
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full"
+    />
+  </motion.div>
+);
+
 const BedIcon = ({ isAssigned }) => (
-  <svg
+  <motion.svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
     fill="none"
@@ -15,12 +31,14 @@ const BedIcon = ({ isAssigned }) => (
     strokeLinecap="round"
     strokeLinejoin="round"
     className={`w-12 h-12 ${isAssigned ? "text-gray-400" : "text-blue-500"}`}
+    whileHover={{ scale: 1.1 }}
+    transition={{ type: "spring", stiffness: 400, damping: 10 }}
   >
     <path d="M2 4v16" />
     <path d="M2 8h18a2 2 0 0 1 2 2v10" />
     <path d="M2 17h20" />
     <path d="M6 8v9" />
-  </svg>
+  </motion.svg>
 );
 
 const BedCard = ({ bed, onStatusChange }) => {
@@ -28,11 +46,16 @@ const BedCard = ({ bed, onStatusChange }) => {
   const isAssigned = Status === "Occupied" || Status === "Reserved";
 
   return (
-    <div
-      className={`flex items-center p-4 border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer ${
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      whileHover={{ scale: 1.02, boxShadow: "0 8px 16px rgba(0,0,0,0.1)" }}
+      className={`flex items-center p-4 border rounded-lg ${
         isAssigned ? "bg-gray-100" : "bg-white"
       }`}
       onClick={() => onStatusChange(BedID)}
+      layout
     >
       <div className="flex-shrink-0 mr-4">
         <BedIcon isAssigned={isAssigned} />
@@ -44,22 +67,39 @@ const BedCard = ({ bed, onStatusChange }) => {
         <p className="text-sm font-medium text-gray-700">Status: {Status}</p>
         {Pid && <p className="text-sm text-gray-600">Patient ID: {Pid}</p>}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
-const Dialog = ({ isOpen, onClose, children }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">{children}</div>
-    </div>
-  );
-};
+const Dialog = ({ isOpen, onClose, children }) => (
+  <AnimatePresence>
+    {isOpen && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          transition={{ type: "spring", damping: 25, stiffness: 500 }}
+          className="bg-white rounded-lg p-6 w-full max-w-md"
+          onClick={e => e.stopPropagation()}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
 
 const Button = ({ onClick, children, color = "blue", disabled = false }) => (
-  <button
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
     onClick={onClick}
     disabled={disabled}
     className={`px-4 py-2 rounded-md text-white font-medium transition-colors duration-300 ${
@@ -69,11 +109,12 @@ const Button = ({ onClick, children, color = "blue", disabled = false }) => (
     } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
   >
     {children}
-  </button>
+  </motion.button>
 );
 
 const Select = ({ value, onChange, options }) => (
-  <select
+  <motion.select
+    whileFocus={{ scale: 1.02 }}
     value={value}
     onChange={(e) => onChange(e.target.value)}
     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -83,11 +124,12 @@ const Select = ({ value, onChange, options }) => (
         {option}
       </option>
     ))}
-  </select>
+  </motion.select>
 );
 
 const Input = ({ value, onChange, placeholder }) => (
-  <input
+  <motion.input
+    whileFocus={{ scale: 1.02 }}
     type="text"
     value={value}
     onChange={(e) => onChange(e.target.value)}
@@ -215,75 +257,120 @@ const BedAssignment = () => {
     }
   };
 
+  const pageVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 }
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
+    <motion.div
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen"
+    >
+      <motion.div className="flex justify-between items-center mb-6">
         <Button onClick={handlePrevHospital}>← Previous Hospital</Button>
-        <h1 className="text-2xl font-bold text-gray-800">
+        <motion.h1
+          layoutId="hospitalTitle"
+          className="text-2xl font-bold text-gray-800 bg-white px-8 py-4 rounded-lg shadow-sm"
+        >
           {currentHospital.name}
-        </h1>
+        </motion.h1>
         <Button onClick={handleNextHospital}>Next Hospital →</Button>
-      </div>
+      </motion.div>
 
-      {isLoading && (
-        <div className="text-center text-gray-600">Loading bed data...</div>
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center text-red-500 mb-4"
+        >
+          {error}
+        </motion.div>
       )}
-      {error && <div className="text-center text-red-500">{error}</div>}
 
-      {!isLoading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {bedData.map((bed) => (
-            <BedCard
-              key={bed[0]}
-              bed={bed}
-              onStatusChange={handleStatusChange}
-            />
-          ))}
-        </div>
-      )}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+      >
+        {bedData.map((bed) => (
+          <BedCard
+            key={bed[0]}
+            bed={bed}
+            onStatusChange={handleStatusChange}
+          />
+        ))}
+      </motion.div>
 
       <Dialog isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
-        <h2 className="text-xl font-semibold mb-4">Edit Bed Status</h2>
-        <p className="text-gray-600 mb-4">
-          Change the status of Bed {selectedBed?.[0]}
-        </p>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Status
-          </label>
-          <Select
-            value={newStatus}
-            onChange={setNewStatus}
-            options={["Available", "Occupied", "Reserved"]}
-          />
-        </div>
-        {newStatus !== "Available" && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Patient ID
-            </label>
-            <Input
-              value={patientId}
-              onChange={setPatientId}
-              placeholder="Enter Patient ID"
-            />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+        >
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Edit Bed Status</h2>
+            <p className="text-gray-600 mb-4">
+              Change the status of Bed {selectedBed?.[0]}
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <Select
+                value={newStatus}
+                onChange={setNewStatus}
+                options={["Available", "Occupied", "Reserved"]}
+              />
+            </div>
+            {newStatus !== "Available" && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Patient ID
+                </label>
+                <Input
+                  value={patientId}
+                  onChange={setPatientId}
+                  placeholder="Enter Patient ID"
+                />
+              </div>
+            )}
+            <div className="flex justify-end space-x-2">
+              <Button
+                onClick={() => setIsDialogOpen(false)}
+                color="gray"
+                disabled={isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveChanges} disabled={isUpdating}>
+                {isUpdating ? "Saving..." : "Save changes"}
+              </Button>
+            </div>
+            {error && <p className="text-red-500 mt-2">{error}</p>}
           </div>
-        )}
-        <div className="flex justify-end space-x-2">
-          <Button
-            onClick={() => setIsDialogOpen(false)}
-            color="gray"
-            disabled={isUpdating}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleSaveChanges} disabled={isUpdating}>
-            {isUpdating ? "Saving..." : "Save changes"}
-          </Button>
-        </div>
-        {error && <p className="text-red-500 mt-2">{error}</p>}
+        </motion.div>
       </Dialog>
-    </div>
+    </motion.div>
   );
 };
 
