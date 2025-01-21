@@ -23,3 +23,7 @@ venv
 *.njsproj
 *.sln
 *.sw?
+
+#backend
+backend/__pycache__
+backend/app/__pycache__
